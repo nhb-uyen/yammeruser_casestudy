@@ -1,0 +1,105 @@
+/*From Mode tutorial*/
+SELECT DATE_TRUNC('week', e.occurred_at),
+       COUNT(DISTINCT e.user_id) AS weekly_active_users
+FROM tutorial.yammer_events e
+WHERE e.event_type = 'engagement'
+  AND e.event_name = 'login'
+GROUP BY 1
+ORDER BY 1 
+
+
+
+/*major location by device*/
+SELECT ev1.location,
+       ev1.device,
+       COUNT(ev1.user_id) AS total_user
+FROM tutorial.yammer_events ev1
+LEFT JOIN
+  (
+  /*user count by major markets*/ 
+  SELECT ev2.location,
+         COUNT(ev2.user_id)
+   FROM tutorial.yammer_events ev2
+   GROUP BY ev2.location
+   HAVING COUNT(ev2.user_id)> 10000
+   ORDER BY 2 DESC)sub
+  ON ev1.location = sub.location
+GROUP BY 1,
+         2
+ORDER BY 3 DESC 
+
+
+
+
+/*total engagement by month*/
+SELECT EXTRACT('month'
+               FROM occurred_at) AS
+month,
+       event_type,
+       COUNT(event_name) AS total_count
+FROM tutorial.yammer_events events
+GROUP BY 1,
+         2
+ORDER BY 2 
+
+
+/*user engagement by device*/
+SELECT EXTRACT('month'FROM occurred_at) AS month,
+       COUNT(user_id) AS total_user,
+       SUM(CASE WHEN device IN('iphone 5','samsung galaxy s4', 'nexus 5', 'iphone 5s', 'iphone 4s','nexus 7',
+               'nokia lumia 635','nexus 10','htc one','amazon fire phone','samsung galaxy note') THEN 1
+               ELSE 0 END) AS phones,
+       SUM(CASE WHEN device IN('ipad air','ipad mini', 'kindle fire', 'samsung galaxy tablet') THEN 1
+               ELSE 0 END) AS tablets,
+       SUM(CASE WHEN device IN('lenovo thinkpad','macbook pro','macbook air','dell inspiron desktop',
+               'dell inspiron notebok','asus chromebook','acer aspire notebook','hp pavilion desktop',
+               'acer aspire desktop','windows surface','mac mini') THEN 1 
+               ELSE 0 END) AS lapton_desktop
+FROM tutorial.yammer_events
+WHERE event_type = 'engagement'
+GROUP BY month 
+
+/*attempt: categorize ctr by email type*/
+/*I want to desplay a line chart to compare the rates of email open and clickthrough on a weekly basis.
+I will need the total number of open actions and clickthrough actions for the weekly digest and reengagement.
+*/
+SELECT week,
+       weekly_open/CASE WHEN weekly_emails = 0 THEN 1 ELSE weekly_emails END::FLOAT AS weekly_open_rate,
+       weekly_clickthrough/CASE WHEN weekly_open = 0 THEN 1 ELSE weekly_open END::FLOAT AS weekly_ctr,
+       retain_open/CASE WHEN retain_emails = 0 THEN 1 ELSE retain_emails END::FLOAT AS retain_open_rate,
+       retain_clickthrough/CASE WHEN retain_open = 0 THEN 1 ELSE retain_open END::FLOAT AS retain_ctr
+  FROM (
+/*Count all the emails by type, then the above commands turn the numbers into decimals (rates) 
+which can be displayed on a line chart*/
+SELECT DATE_TRUNC('week',e1.occurred_at) AS week,
+       COUNT(CASE WHEN e1.action='sent_weekly_digest' THEN e1.user_id ELSE NULL END) AS weekly_emails,
+       COUNT(CASE WHEN e1.action='sent_weekly_digest' THEN e2.user_id ELSE NULL END) AS weekly_open,
+       COUNT(CASE WHEN e1.action='sent_weekly_digest' THEN e3.user_id ELSE NULL END) AS weekly_clickthrough,
+       COUNT(CASE WHEN e1.action='sent_reengagement_email' THEN e1.user_id ELSE NULL END) AS retain_emails,
+       COUNT(CASE WHEN e1.action='sent_reengagement_email' THEN e2.user_id ELSE NULL END) AS retain_open,
+       COUNT(CASE WHEN e1.action='sent_reengagement_email' THEN e3.user_id ELSE NULL END) AS retain_clickthrough
+/*To display the drop in the overall user engagement, which is what we are investigating*/
+FROM tutorial.yammer_emails e1
+LEFT JOIN tutorial.yammer_events a 
+  ON a.occurred_at = e1.occurred_at
+  AND a.event_type = 'engagement'
+  AND a.event_name = 'login'
+/*To group all email_open actions for both weekly digest and reengagement emails*/ 
+  LEFT JOIN tutorial.yammer_emails e2
+    ON e2.occurred_at >= e1.occurred_at
+   AND e2.occurred_at < e1.occurred_at + INTERVAL '5 MINUTE'
+   AND e2.user_id = e1.user_id
+   AND e2.action = 'email_open'
+/*To group all clickthrough actions for both weekly digest and reengagement emails.
+The time condition (within 5 minutes of sent emails) allow the action to be displayed in the same rows
+as the email type. They were all originally in the same column*/
+  LEFT JOIN tutorial.yammer_emails e3
+    ON e3.occurred_at >= e2.occurred_at
+   AND e3.occurred_at < e2.occurred_at + INTERVAL '5 MINUTE'
+   AND e3.user_id = e2.user_id
+   AND e3.action = 'email_clickthrough'
+/*To make sure only weekly digest and reengagement emails appear in the email column, 
+not open or clickthrough actions like in the original data table*/
+WHERE e1.action IN ('sent_weekly_digest','sent_reengagement_email')
+GROUP BY 1
+ORDER by 1
