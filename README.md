@@ -43,10 +43,3 @@ The tables in this repository are created automatically on the Mode's code editi
 
  ##**Chart 7.** Weekly email open and clickthrough rates by email type
 ![](https://cdn-images-1.medium.com/max/2160/1*KAm8Ppv0b7c4uYY0N2mm1A.png)
-
-
-
-**Chart 4.** Weekly active user and user count by smartphone, tablet, and computer devices **(left)**; weekly active user and user count by phone only **(right)**
-![](https://cdn-images-1.medium.com/max/2160/1*VqCRnqMcTyqHbzy4AKNggA.png)
-![](https://cdn-images-1.medium.com/max/2160/1*nLf-oqkLzKrfX4E1cAsM9g.png)
-
