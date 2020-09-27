@@ -52,7 +52,7 @@ SELECT DATE_TRUNC('month',e1.occurred_at) AS month,
        COUNT(CASE WHEN action ='email_open' THEN user_id ELSE NULL END) email_open,
        COUNT(CASE WHEN action ='email_clickthrough' THEN user_id ELSE NULL END) email_clickthrough,
        COUNT(CASE WHEN action ='sent_weekly_digest' THEN user_id ELSE NULL END) sent_reengagement_email,
-       COUNT(CASE WHEN action ='sent_reengagement_email' THEN user_id ELSE NULL END) sent_reengagement_email,
+       COUNT(CASE WHEN action ='sent_reengagement_email' THEN user_id ELSE NULL END) sent_reengagement_email
 FROM tutorial.yammer_emails
 GROUP BY 1
 ORDER BY 1
