@@ -54,7 +54,7 @@ SELECT DATE_TRUNC('month',e1.occurred_at) AS month,
        COUNT(CASE WHEN action ='sent_weekly_digest' THEN user_id ELSE NULL END) sent_reengagement_email,
        COUNT(CASE WHEN action ='sent_reengagement_email' THEN user_id ELSE NULL END) sent_reengagement_email
 FROM tutorial.yammer_emails
-GROUP BY 1
+GROUP BY 1,2
 ORDER BY 1
 
 /*Chart 6: email activities& engagement rates by week*/
